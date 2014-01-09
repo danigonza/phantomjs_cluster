@@ -15,6 +15,7 @@ Run the app:
 ```
 $ node app
 Express server listening on port 3000
+```
 
 ## Usage
 
