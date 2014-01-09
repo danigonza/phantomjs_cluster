@@ -1,0 +1,14 @@
+{
+  "name": "express_phantomjs",
+  "version": "0.0.2",
+  "private": true,
+  "scripts": {
+    "start": "node app.js"
+  },
+  "dependencies": {
+    "express": "3.x",
+    "redis": "*",
+    "config": "0.4.15",
+    "request": "2.9.153"
+  }
+}
