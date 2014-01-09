@@ -23,6 +23,7 @@ For a quick test with the command line, type:
 
 ```sh
 $ curl http://localhost:3000/?address=www.google.com&output=/tmp/out.png&type=0 > google.png
+```
 
 ## Configuration
 
@@ -45,8 +46,3 @@ For instance, if you want to setup a proxy for phantomjs, create a `config/devel
 rasterizer:
   command: 'phantomjs --proxy=myproxy:1234'
 ```
-## TODO
-* [] Create a function rasterizerService.getPhantomServer() that return an available phantomjs server depending on the work charge. The rule must be to get the server with less work.
-* [] Get out Snitches
-* [] Include multiple phantomjs scripts
-* [] Closing Request
