@@ -5,7 +5,8 @@ var path = require('path');
 var request = require('request');
 
 module.exports = function(app, useCors) {
-  var rasterizerService = app.settings.rasterizerService;
+  //var rasterizerService = app.settings.rasterizerService;
+  var redisService = app.settings.redisService;
 
   // routes
   app.get('/', function(req, res, next) {
@@ -19,33 +20,42 @@ module.exports = function(app, useCors) {
     var filePath = req.param('output');
     var renderType = req.param('type');
 
-    // required options
+    // Get the phantomServer with less work
+    redisService.getServerLessWork(function(server){
+        var params = { 'server': server, 'url': url, 'filePath': filePath, 'renderType': renderType };
+        createHeaders(req, params, function(options){
+          var callbackUrl = req.param('callback', false) ? utils.url(req.param('callback')) : false;
+          if (fs.existsSync(filePath)) {
+            console.log('Request for %s - Found in cache', url);
+            processImageUsingCache(filePath, res, callbackUrl, function(err) { if (err) next(err); });
+            return;
+          }
+          console.log('Request for %s - Rasterizing it', url);
+          processImageUsingRasterizer(server, options, filePath, res, callbackUrl, function(err) { if(err) next(err); });
+        });
+    });
+  });
+
+  app.get('*', function(req, res, next) {
+    res.status(404).send('Only supported index route');  
+  });
+
+  var createHeaders = function(req, params, callback){
+    // Required options
     var options = {
-      uri: 'http://localhost:' + rasterizerService.getPort() + '/',
-      headers: { url: url, path: filePath, renderType: renderType }
+      uri: 'http://localhost:' + params.server.serverId + '/',
+      headers: { url: params.url, path: params.filePath, renderType: params.renderType }
     };
     ['width', 'height', 'clipRect', 'javascriptEnabled', 'loadImages', 'localToRemoteUrlAccessEnabled', 'userAgent', 'userName', 'password', 'delay'].forEach(function(name) {
       if (req.param(name, false)) options.headers[name] = req.param(name);
     });
 
     // Set the filename and added to the request header
-    var filename = filePath.split("/").pop();
+    var filename = params.filePath.split("/").pop();
     options.headers.filename = filename;
-
-    var callbackUrl = req.param('callback', false) ? utils.url(req.param('callback')) : false;
-
-    if (fs.existsSync(filePath)) {
-      console.log('Request for %s - Found in cache', url);
-      processImageUsingCache(filePath, res, callbackUrl, function(err) { if (err) next(err); });
-      return;
-    }
-    console.log('Request for %s - Rasterizing it', url);
-    processImageUsingRasterizer(options, filePath, res, callbackUrl, function(err) { if(err) next(err); });
-  });
-
-  app.get('*', function(req, res, next) {
-    res.status(404).send('Only supported index route');  
-  });
+    
+    callback(options);
+  }
 
   // bits of logic
   var processImageUsingCache = function(filePath, res, url, callback) {
@@ -59,27 +69,31 @@ module.exports = function(app, useCors) {
     }
   }
 
-  var processImageUsingRasterizer = function(rasterizerOptions, filePath, res, url, callback) {
+  var processImageUsingRasterizer = function(server, rasterizerOptions, filePath, res, url, callback) {
+    redisService.addWork(server.serverId);
     if (url) {
       // asynchronous
       res.send('Will post screenshot to ' + url + ' when processed');
-      callRasterizer(rasterizerOptions, function(error) {
+      callRasterizer(server, rasterizerOptions, function(error) {
         if (error) return callback(error);
         postImageToUrl(filePath, url, callback);
       });
     } else {
       // synchronous
-      callRasterizer(rasterizerOptions, function(error) {
+      callRasterizer(server, rasterizerOptions, function(error) {
         if (error) return callback(error);
         sendImageInResponse(filePath, res, callback);
       });
     }
   }
 
-  var callRasterizer = function(rasterizerOptions, callback) {
+  var callRasterizer = function(server, rasterizerOptions, callback) {
     request.get(rasterizerOptions, function(error, response, body) {
+      redisService.removeWork(server.serverId);
       if (error || response.statusCode != 200) {
         console.log('Error while requesting the rasterizer: %s', error.message);
+        var nameRasterizerService = "rasterizerService_" + server.serverId;
+        var rasterizerService = app.settings.nameRasterizerService;
         rasterizerService.restartService();
         return callback(new Error(body));
       }
