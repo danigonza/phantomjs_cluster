@@ -22,7 +22,7 @@ Express server listening on port 3000
 For a quick test with the command line, type:
 
 ```sh
-$ curl http://localhost:3000/?address=www.google.com&output=/tmp/out.png&type=0 > google.png
+$ curl http://localhost:3000/?address=www.google.com&output=/tmp/out.png&type=0 > output.png
 ```
 
 ## Configuration
@@ -33,11 +33,17 @@ Create a `config/development.yaml` or a `config/production.yaml` to override any
 rasterizer:
   command: phantomjs   # phantomjs executable
   port: 3001           # internal service port. No need to allow inbound or outbound access to this port
-  viewport: '1024x600' # browser window size. Height frows according to the content
+  viewport: '612x612' # browser window size. Height frows according to the content
+  num: 2
 cache:
   lifetime: 60000      # one minute, set to 0 for no cache
 server:
-  port: 3000           # main service port
+  port: 3202           # main service port
+  useCors: false       # enable CORS support
+redis:
+  port: 6379
+  host: 127.0.0.1
+  debug: false
 ```
 
 For instance, if you want to setup a proxy for phantomjs, create a `config/development.yaml` as follows:
