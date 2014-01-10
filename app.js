@@ -25,14 +25,14 @@ var redisService = new RedisService(config.redis).startService(function(data){
 	app.configure(function(){
 	  app.use(app.router);
 	  app.set('redisService', redisService);
-	  for (var i=0; i < config.rasterizer.num; i++){
+	  for (var i = 0; i < config.rasterizer.num; i++){
 	  	app.set('rasterizerService_' + (config.rasterizer.port + i), new RasterizerService(config.rasterizer, config.rasterizer.port + i).startService(redisService));
 	  }
 	});
 	app.configure('development', function() {
 	  app.use(express.errorHandler({ dumpExceptions: true, showStack: true }));
 	});
-	require('./routes')(app, config.server.useCors);
+	require('./routes')(app, config.server);
 	app.listen(config.server.port);
 	console.log('Express server listening on port ' + config.server.port);
 });

@@ -4,7 +4,7 @@ var fs = require('fs');
 var path = require('path');
 var request = require('request');
 
-module.exports = function(app, useCors) {
+module.exports = function(app, serverConfig) {
   //var rasterizerService = app.settings.rasterizerService;
   var redisService = app.settings.redisService;
 
@@ -22,17 +22,19 @@ module.exports = function(app, useCors) {
 
     // Get the phantomServer with less work
     redisService.getServerLessWork(function(server){
-        var params = { 'server': server, 'url': url, 'filePath': filePath, 'renderType': renderType };
-        createHeaders(req, params, function(options){
-          var callbackUrl = req.param('callback', false) ? utils.url(req.param('callback')) : false;
-          if (fs.existsSync(filePath)) {
-            console.log('Request for %s - Found in cache', url);
-            processImageUsingCache(filePath, res, callbackUrl, function(err) { if (err) next(err); });
-            return;
-          }
-          console.log('Request for %s - Rasterizing it', url);
-          processImageUsingRasterizer(server, options, filePath, res, callbackUrl, function(err) { if(err) next(err); });
-        });
+      var params = { 'server': server, 'url': url, 'filePath': filePath, 'renderType': renderType };
+      createHeaders(req, params, function(options){
+        var callbackUrl = req.param('callback', false) ? utils.url(req.param('callback')) : false;
+        if (fs.existsSync(filePath)) {
+          console.log('Request for %s - Found in cache', url);
+          processImageUsingCache(filePath, res, callbackUrl, function(err){ 
+            finishingProcessingImage(err, res); 
+          });
+          return;
+        }
+        console.log('Request for %s - Rasterizing it', url);
+        processImageUsingRasterizer(server, options, filePath, res, callbackUrl, function(err){ finishingProcessingImage(err, res); });
+      });
     });
   });
 
@@ -65,7 +67,8 @@ module.exports = function(app, useCors) {
       postImageToUrl(filePath, url, callback);
     } else {
       // synchronous
-      sendImageInResponse(filePath, res, callback);
+       if (serverConfig.sendImage) sendImageInResponse(filePath, res, callback);
+       else callback()
     }
   }
 
@@ -82,7 +85,8 @@ module.exports = function(app, useCors) {
       // synchronous
       callRasterizer(server, rasterizerOptions, function(error) {
         if (error) return callback(error);
-        sendImageInResponse(filePath, res, callback);
+        if (serverConfig.sendImage) sendImageInResponse(filePath, res, callback);
+        else callback()
       });
     }
   }
@@ -116,13 +120,24 @@ module.exports = function(app, useCors) {
 
   var sendImageInResponse = function(imagePath, res, callback) {
     console.log('Sending image in response');
-    if (useCors) {
+    if (serverConfig.useCors) {
       res.setHeader("Access-Control-Allow-Origin", "*");
       res.setHeader("Access-Control-Expose-Headers", "Content-Type");
     }
     res.sendfile(imagePath, function(err) {
       callback(err);
     });
+  }
+
+  var finishingProcessingImage = function(err, res){
+    if (err) {
+      next(err);
+      res.send(500, err);
+    }
+    else{
+      res.send(200, "OK");
+    } 
+    console.log('Finished processing image');
   }
 
 };

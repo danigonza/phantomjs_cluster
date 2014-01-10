@@ -40,6 +40,7 @@ cache:
 server:
   port: 3202           # main service port
   useCors: false       # enable CORS support
+  sendImage: false
 redis:
   port: 6379
   host: 127.0.0.1
