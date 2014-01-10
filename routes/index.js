@@ -94,10 +94,14 @@ module.exports = function(app, serverConfig) {
   }
 
   var callRasterizer = function(server, rasterizerOptions, callback) {
+    console.dir(rasterizerOptions);
     request.get(rasterizerOptions, function(error, response, body) {
+      console.info("response.statusCode: %s", response.statusCode);
+      console.info("response.message: %s", response.message);
+      console.info("response.body: %s", response.body.trim());
       redisService.removeWork(server.serverId);
       if (error || response.statusCode != 200) {
-        console.log('Error while requesting the rasterizer: %s', error.message);
+        console.error('Error while requesting the rasterizer: %s', error.message);
         var nameRasterizerService = "rasterizerService_" + server.serverId;
         var rasterizerService = app.settings.nameRasterizerService;
         rasterizerService.restartService();
@@ -111,11 +115,11 @@ module.exports = function(app, serverConfig) {
     console.log('Streaming image to %s', url);
     var fileStream = fs.createReadStream(imagePath);
     fileStream.on('error', function(err){
-      console.log('Error while reading file: %s', err.message);
+      console.error('Error while reading file: %s', err.message);
       callback(err);
     });
     fileStream.pipe(request.post(url, function(err) {
-      if (err) console.log('Error while streaming screenshot: %s', err);
+      if (err) console.error('Error while streaming screenshot: %s', err);
       callback(err);
     }));
   }

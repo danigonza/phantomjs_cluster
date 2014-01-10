@@ -56,19 +56,19 @@ service = server.listen(port, function(request, response) {
     return;
   }
 
-  if (!request.headers.url) {
+  if (request.headers.url != undefined) {
     response.statusCode = 400;
     response.write('Error: Request must contain an url header' + "\n");
     response.close();
     return;
   }
-  if (!request.headers.path) {
+  if (request.headers.path != undefined) {
     response.statusCode = 400;
     response.write('Error: Request must contain an path header' + "\n");
     response.close();
     return;
   }
-  if (!request.headers.renderType) {
+  if (request.headers.renderType != undefined) {
     response.statusCode = 400;
     response.write('Error: Request must contain an renderType header' + "\n");
     response.close();
@@ -80,6 +80,9 @@ service = server.listen(port, function(request, response) {
   var renderType = request.headers.renderType;
   var page = new WebPage();
   var delay = request.headers.delay || 0;
+  response.write("RenderType: %s \n", renderType);
+  response.close();
+  return;
 
   try {
     page.viewportSize = {

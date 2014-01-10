@@ -28,7 +28,7 @@ var redisService = new RedisService(config.redis).startService(function(data){
 	  app.use(app.router);
 	  app.set('redisService', redisService);
 	  for (var i = 0; i < config.rasterizer.num; i++){
-	  	app.set('rasterizerService_' + (config.rasterizer.port + i), new RasterizerService(config.rasterizer, config.rasterizer.port + i).startService(redisService));
+	  	app.set('rasterizerService_' + (config.rasterizer.port + i), new RasterizerService(config.rasterizer, config.rasterizer.port + i, redisService).startService());
 	  }
 	});
 	app.configure('development', function() {
