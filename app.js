@@ -3,6 +3,8 @@
  */
 var config = require('config');
 var express = require('express');
+var clim = require("clim");
+var console = clim();
 var RasterizerService = require('./lib/rasterizerService');
 var RedisService = require('./lib/redisService');
 

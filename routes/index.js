@@ -3,6 +3,8 @@ var join = require('path').join;
 var fs = require('fs');
 var path = require('path');
 var request = require('request');
+var clim = require("clim");
+var console = clim();
 
 module.exports = function(app, serverConfig) {
   //var rasterizerService = app.settings.rasterizerService;
