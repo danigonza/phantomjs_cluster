@@ -86,9 +86,7 @@ service = server.listen(port, function(request, response) {
       width: request.headers.width || defaultViewportSize.width,
       height: request.headers.height || defaultViewportSize.height
     };
-    console.log(renderType);
     if(renderType == 1){
-      console.log('aca');
       page.clipRect = { top: 0, left: 0, width: 612, height: 612 }; 
     }
     for (name in pageSettings) {
