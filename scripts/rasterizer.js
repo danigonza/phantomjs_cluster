@@ -125,6 +125,7 @@ service = server.listen(port, function(request, response) {
               pageLoad();
             }, 10);
           } else {
+            console.log('Success: Screenshot saved to ' + path + "\n");
             page.render(path);
             response.write('Success: Screenshot saved to ' + path + "\n");
             page.release();
@@ -132,6 +133,7 @@ service = server.listen(port, function(request, response) {
           }
         }
         else{
+          console.log("Too much retries \n");
           page.release();
           response.statusCode = 500;
           response.write("Too much retries \n");
@@ -142,6 +144,7 @@ service = server.listen(port, function(request, response) {
       pageLoad();
     } 
     else {
+      console.log('Url returned status ' + status + "\n");
       page.release();
       response.statusCode = 404;
       response.write('Url returned status ' + status + "\n");
