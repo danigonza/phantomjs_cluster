@@ -96,8 +96,8 @@ module.exports = function(app, serverConfig) {
   var callRasterizer = function(server, rasterizerOptions, callback) {
     //console.dir(rasterizerOptions);
     request.get(rasterizerOptions, function(error, response, body) {
-      console.info("response.statusCode: %s", response.statusCode);
-      console.info("response.body: %s", response.body.trim());
+      //console.info("response.statusCode: %s", response.statusCode);
+      //console.info("response.body: %s", response.body.trim());
       redisService.removeWork(server.serverId);
       if (error || response.statusCode != 200) {
         console.error('Error while requesting the rasterizer: {%s}', response.body.trim());
@@ -141,7 +141,7 @@ module.exports = function(app, serverConfig) {
       next(err);
     }
     else{
-      res.send(200, "OK");
+      res.send(200, { message: "OK" });
     } 
   }
 
