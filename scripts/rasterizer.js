@@ -49,6 +49,8 @@ server = require('webserver').create();
  * userAgent: Mozilla/5.0 (iPhone; U; CPU like Mac OS X; en) AppleWebKit/420+
  */ 
 service = server.listen(port, function(request, response) {
+
+
   if (request.url == '/healthCheck') {
     response.statusCode = 200;
     response.write('up');
@@ -56,21 +58,22 @@ service = server.listen(port, function(request, response) {
     return;
   }
 
-  if (request.headers.url != undefined) {
+  // Check required parameters
+  if (request.headers.url == undefined) {
     response.statusCode = 400;
-    response.write('Error: Request must contain an url header' + "\n");
+    response.write('Request must contain an url header' + "\n");
     response.close();
     return;
   }
-  if (request.headers.path != undefined) {
+  if (request.headers.path == undefined) {
     response.statusCode = 400;
-    response.write('Error: Request must contain an path header' + "\n");
+    response.write('Request must contain an path header' + "\n");
     response.close();
     return;
   }
-  if (request.headers.renderType != undefined) {
+  if (request.headers.renderType == undefined) {
     response.statusCode = 400;
-    response.write('Error: Request must contain an renderType header' + "\n");
+    response.write('Request must contain an renderType header' + "\n");
     response.close();
     return;
   }
@@ -80,9 +83,6 @@ service = server.listen(port, function(request, response) {
   var renderType = request.headers.renderType;
   var page = new WebPage();
   var delay = request.headers.delay || 0;
-  response.write("RenderType: %s \n", renderType);
-  response.close();
-  return;
 
   try {
     page.viewportSize = {
@@ -104,15 +104,23 @@ service = server.listen(port, function(request, response) {
     return response.close();
   }
 
+  page.onResourceError = function(resourceError) {
+    page.close();
+    response.statusCode = 404;
+    response.write("Unable to load resource \n");
+    return response.close();  
+  };
+
   page.open(url, function(status) {
     if (status == 'success') {
       var retries = 0;
       var pageLoad = function(){
         retries++;
-        if (retries <= 20) {
+        if (retries <= 20) {        
           var loading = page.evaluate(function(){
-            var htmlElement = document.getElementsByTagName("html")[0];
-            return hasClass(htmlElement, "loading");
+            var ele = document.getElementsByTagName("html")[0];
+            var cls = "loading";
+            return ele.className.match(new RegExp('(\\s|^)'+cls+'(\\s|$)'));
           });
           if (typeof loading == 'object') {
             setTimeout(function(){
@@ -126,20 +134,25 @@ service = server.listen(port, function(request, response) {
           }
         }
         else{
-          response.write("Error: Too much retries \n");
           page.release();
+          response.statusCode = 500;
+          response.write("Too much retries \n");
           response.close();  
+          return;
         }
       }
       pageLoad();
     } 
     else {
-      response.write('Error: Url returned status ' + status + "\n");
       page.release();
+      response.statusCode = 404;
+      response.write('Url returned status ' + status + "\n");
       response.close();
+      return;
     }
   });
+
   // must start the response now, or phantom closes the connection
-  response.statusCode = 200;
-  response.write('');
+  //response.statusCode = 200;
+  //response.write('');
 });

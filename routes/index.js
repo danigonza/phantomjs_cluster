@@ -13,7 +13,7 @@ module.exports = function(app, serverConfig) {
   // routes
   app.get('/', function(req, res, next) {
     // Check parameters
-    if (!req.param('address', false) && !req.param('output', false) && !req.param('type', false)) {
+    if (!req.param('address', false) || !req.param('output', false) || !req.param('type', false)) {
       return res.status(400).send('Missisng required parameters');  
     }
 
@@ -30,12 +30,12 @@ module.exports = function(app, serverConfig) {
         if (fs.existsSync(filePath)) {
           console.log('Request for %s - Found in cache', url);
           processImageUsingCache(filePath, res, callbackUrl, function(err){ 
-            finishingProcessingImage(err, res); 
+            finishingProcessingImage(err, res, next); 
           });
           return;
         }
         console.log('Request for %s - Rasterizing it', url);
-        processImageUsingRasterizer(server, options, filePath, res, callbackUrl, function(err){ finishingProcessingImage(err, res); });
+        processImageUsingRasterizer(server, options, filePath, res, callbackUrl, function(err){ finishingProcessingImage(err, res, next); });
       });
     });
   });
@@ -94,18 +94,17 @@ module.exports = function(app, serverConfig) {
   }
 
   var callRasterizer = function(server, rasterizerOptions, callback) {
-    console.dir(rasterizerOptions);
+    //console.dir(rasterizerOptions);
     request.get(rasterizerOptions, function(error, response, body) {
       console.info("response.statusCode: %s", response.statusCode);
-      console.info("response.message: %s", response.message);
       console.info("response.body: %s", response.body.trim());
       redisService.removeWork(server.serverId);
       if (error || response.statusCode != 200) {
-        console.error('Error while requesting the rasterizer: %s', error.message);
-        var nameRasterizerService = "rasterizerService_" + server.serverId;
-        var rasterizerService = app.settings.nameRasterizerService;
-        rasterizerService.restartService();
-        return callback(new Error(body));
+        console.error('Error while requesting the rasterizer: {%s}', response.body.trim());
+        //var nameRasterizerService = "rasterizerService_" + server.serverId;
+        //var rasterizerService = app.settings.nameRasterizerService;
+        //server.restartService();
+        return callback(new Error(response.body.trim()));
       }
       callback(null);
     });
@@ -135,15 +134,15 @@ module.exports = function(app, serverConfig) {
     });
   }
 
-  var finishingProcessingImage = function(err, res){
+  var finishingProcessingImage = function(err, res, next){
+    console.log('Finished processing image');
     if (err) {
+      res.send(500, { error: err.toString() });
       next(err);
-      res.send(500, err);
     }
     else{
       res.send(200, "OK");
     } 
-    console.log('Finished processing image');
   }
 
 };
