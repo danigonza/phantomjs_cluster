@@ -34,11 +34,12 @@ rasterizer:
   command: phantomjs   # phantomjs executable
   port: 3001           # internal service port. No need to allow inbound or outbound access to this port
   viewport: '612x612' # browser window size. Height frows according to the content
-  num: 2
+  num: 1
+  debug: false
 cache:
   lifetime: 60000      # one minute, set to 0 for no cache
 server:
-  port: 3202           # main service port
+  port: 3200           # main service port
   useCors: false       # enable CORS support
   sendImage: false
 redis:
