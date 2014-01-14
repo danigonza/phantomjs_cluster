@@ -87,7 +87,7 @@ service = server.listen(port, function(request, response) {
       width: request.headers.width || defaultViewportSize.width,
       height: request.headers.height || defaultViewportSize.height
     };
-    if(renderType == 1){
+    if (renderType == 1){
       page.clipRect = { top: 0, left: 0, width: 612, height: 612 }; 
     }
     for (name in pageSettings) {
@@ -118,7 +118,7 @@ service = server.listen(port, function(request, response) {
           var loading = page.evaluate(function(){
             var ele = document.getElementsByTagName("html")[0];
             var cls = "loading";
-            return ele.className.match(new RegExp('(\\s|^)'+cls+'(\\s|$)'));
+            return ele.className.match(new RegExp('(\\s|^)' + cls + '(\\s|$)'));
           });
           if (typeof loading == 'object') {
             setTimeout(function(){
@@ -131,8 +131,7 @@ service = server.listen(port, function(request, response) {
             page.release();
             response.close();
           }
-        }
-        else{
+        } else {
           console.log("Too much retries \n");
           page.release();
           response.statusCode = 500;
@@ -142,8 +141,7 @@ service = server.listen(port, function(request, response) {
         }
       }
       pageLoad();
-    } 
-    else {
+    } else {
       console.log('Url returned status ' + status + "\n");
       page.release();
       response.statusCode = 404;

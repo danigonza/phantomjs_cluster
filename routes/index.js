@@ -51,7 +51,7 @@ module.exports = function(app, serverConfig) {
       headers: { url: params.url, path: params.filePath, renderType: params.renderType }
     };
     ['width', 'height', 'clipRect', 'javascriptEnabled', 'loadImages', 'localToRemoteUrlAccessEnabled', 'userAgent', 'userName', 'password', 'delay'].forEach(function(name) {
-      if (req.param(name, false)) options.headers[name] = req.param(name);
+      if (req.param(name, false)){ options.headers[name] = req.param(name); }
     });
 
     // Set the filename and added to the request header
@@ -69,8 +69,11 @@ module.exports = function(app, serverConfig) {
       postImageToUrl(filePath, url, callback);
     } else {
       // synchronous
-       if (serverConfig.sendImage) sendImageInResponse(filePath, res, callback);
-       else callback()
+      if (serverConfig.sendImage){
+        sendImageInResponse(filePath, res, callback); 
+      } else {
+        callback(); 
+      }
     }
   }
 
@@ -80,15 +83,18 @@ module.exports = function(app, serverConfig) {
       // asynchronous
       res.send('Will post screenshot to ' + url + ' when processed');
       callRasterizer(server, rasterizerOptions, function(error) {
-        if (error) return callback(error);
+        if (error){ return callback(error); }
         postImageToUrl(filePath, url, callback);
       });
     } else {
       // synchronous
       callRasterizer(server, rasterizerOptions, function(error) {
-        if (error) return callback(error);
-        if (serverConfig.sendImage) sendImageInResponse(filePath, res, callback);
-        else callback()
+        if (error){ return callback(error); }
+        if (serverConfig.sendImage){ 
+          sendImageInResponse(filePath, res, callback);
+        } else { 
+          callback(); 
+        }
       });
     }
   }
@@ -118,7 +124,7 @@ module.exports = function(app, serverConfig) {
       callback(err);
     });
     fileStream.pipe(request.post(url, function(err) {
-      if (err) console.error('Error while streaming screenshot: %s', err);
+      if (err){ console.error('Error while streaming screenshot: %s', err); }
       callback(err);
     }));
   }
@@ -139,10 +145,8 @@ module.exports = function(app, serverConfig) {
     if (err) {
       res.send(500, { error: err.toString() });
       next(err);
-    }
-    else{
+    } else {
       res.send(200, { message: "OK" });
     } 
   }
-
 };
