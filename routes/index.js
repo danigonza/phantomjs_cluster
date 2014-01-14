@@ -23,17 +23,35 @@ module.exports = function(app, serverConfig) {
     var renderType = req.param('type');
 
     // Get the phantomServer with less work
-    redisService.getServerLessWork(function(server){
-      var params = { 'server': server, 'url': url, 'filePath': filePath, 'renderType': renderType };
-      createHeaders(req, params, function(options){
+    /*redisService.getServerLessWork(function(server){
+      var params = { 'server': server, 'url': url, 'filePath': filePath, 'renderTnode appype': renderType };
+      createHeaders(req, params, serverConfig, function(options){
         var callbackUrl = req.param('callback', false) ? utils.url(req.param('callback')) : false;
-        if (fs.existsSync(filePath)) {
+        if (!serverConfig.loadTest && fs.existsSync(filePath)) {
           console.log('Request for %s - Found in cache', url);
           processImageUsingCache(filePath, res, callbackUrl, function(err){ 
             finishingProcessingImage(err, res, next); 
           });
           return;
         }
+        console.log('Request for %s - Rasterizing it', url);
+        processImageUsingRasterizer(server, options, filePath, res, callbackUrl, function(err){ finishingProcessingImage(err, res, next); });
+      });
+    });*/
+
+    // Get the phantomServer with less work
+    var callbackUrl = req.param('callback', false) ? utils.url(req.param('callback')) : false;
+    if (!serverConfig.loadTest && fs.existsSync(filePath)) {
+      console.log('Request for %s - Found in cache', url);
+      processImageUsingCache(filePath, res, callbackUrl, function(err){ 
+        finishingProcessingImage(err, res, next); 
+      });
+      return;
+    }
+
+    redisService.getServerLessWork(function(server){
+      var params = { 'server': server, 'url': url, 'filePath': filePath, 'renderType': renderType };
+      createHeaders(req, params, serverConfig, function(options){
         console.log('Request for %s - Rasterizing it', url);
         processImageUsingRasterizer(server, options, filePath, res, callbackUrl, function(err){ finishingProcessingImage(err, res, next); });
       });
@@ -44,7 +62,7 @@ module.exports = function(app, serverConfig) {
     res.status(404).send('Only supported index route');  
   });
 
-  var createHeaders = function(req, params, callback){
+  var createHeaders = function(req, params, serverConfig, callback){
     // Required options
     var options = {
       uri: 'http://localhost:' + params.server.serverId + '/',
@@ -55,7 +73,15 @@ module.exports = function(app, serverConfig) {
     });
 
     // Set the filename and added to the request header
-    var filename = params.filePath.split("/").pop();
+    var filename;
+    if (!serverConfig.loadTest) {
+      filename = params.filePath.split("/").pop();
+    } else {
+    // If we are in load test we create files with diferent names
+      filename = Math.random().toString(36).substring(7) + '.png';
+      filePath = "/tmp/test_load/" + filename;
+      options.headers.path = filePath
+    }
     options.headers.filename = filename;
     
     callback(options);
