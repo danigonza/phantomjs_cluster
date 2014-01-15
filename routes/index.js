@@ -53,7 +53,17 @@ module.exports = function(app, serverConfig) {
       var params = { 'server': server, 'url': url, 'filePath': filePath, 'renderType': renderType };
       createHeaders(req, params, serverConfig, function(options){
         console.log('Request for %s - Rasterizing it', url);
-        processImageUsingRasterizer(server, options, filePath, res, callbackUrl, function(err){ finishingProcessingImage(err, res, next); });
+        processImageUsingRasterizer(server, options, filePath, res, callbackUrl, function(err){ 
+          //finishingProcessingImage(err, res, next); 
+          console.log('Finished processing image');
+          if (err) {
+            res.send(500, { error: err.toString() });
+            next(err);
+          } else {
+            res.send(200, { message: "OK" });
+            next();
+          } 
+        });
       });
     });
   });
