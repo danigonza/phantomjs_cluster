@@ -156,6 +156,12 @@ module.exports = function(app, serverConfig) {
         callback(null);
       });
     });
+    
+    /*redisService.removeWork(server.serverId, function(){
+       
+        callback(null);
+    });*/
+    
   }
 
   var postImageToUrl = function(imagePath, url, callback) {

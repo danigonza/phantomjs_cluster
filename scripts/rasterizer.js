@@ -114,7 +114,7 @@ service = server.listen(port, function(request, response) {
       var retries = 0;
       var pageLoad = function(){
         retries++;
-        if (retries <= 20) {        
+        if (retries <= 100) {        
           var loading = page.evaluate(function(){
             var ele = document.getElementsByTagName("html")[0];
             var cls = "loading";
@@ -131,7 +131,7 @@ service = server.listen(port, function(request, response) {
             page.release();
             //new
             response.statusCode = 200;
-            response.write('');
+            response.write('OK');
             //
             response.close();
             // new
