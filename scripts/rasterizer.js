@@ -129,7 +129,13 @@ service = server.listen(port, function(request, response) {
             page.render(path);
             response.write('Success: Screenshot saved to ' + path + "\n");
             page.release();
+            //new
+            response.statusCode = 200;
+            response.write('');
+            //
             response.close();
+            // new
+            return;
           }
         } else {
           console.log("Too much retries \n");
