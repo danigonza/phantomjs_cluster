@@ -125,7 +125,7 @@ module.exports = function(app, serverConfig) {
       } else {
         // synchronous
         callRasterizer(server, rasterizerOptions, function(error) {
-          if (error){ return callback(error); }
+          if (error){ console.log('Callback processImageUsingRasterizer')return callback(error); }
           if (serverConfig.sendImage){ 
             sendImageInResponse(filePath, res, callback);
           } else { 
