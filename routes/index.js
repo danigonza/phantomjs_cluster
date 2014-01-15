@@ -49,23 +49,27 @@ module.exports = function(app, serverConfig) {
       return;
     }
 
-    redisService.getServerLessWork(function(server){
-      var params = { 'server': server, 'url': url, 'filePath': filePath, 'renderType': renderType };
-      createHeaders(req, params, serverConfig, function(options){
-        console.log('Request for %s - Rasterizing it', url);
-        processImageUsingRasterizer(server, options, filePath, res, callbackUrl, function(err){ 
-          //finishingProcessingImage(err, res, next); 
-          console.log('Finished processing image');
-          if (err) {
-            res.send(500, { error: err.toString() });
-            next(err);
-          } else {
-            res.send(200, { message: "OK" });
-            next();
-          } 
+    try{
+      redisService.getServerLessWork(function(server){
+        var params = { 'server': server, 'url': url, 'filePath': filePath, 'renderType': renderType };
+        createHeaders(req, params, serverConfig, function(options){
+          console.log('Request for %s - Rasterizing it', url);
+          processImageUsingRasterizer(server, options, filePath, res, callbackUrl, function(err){ 
+            //finishingProcessingImage(err, res, next); 
+            console.log('Finished processing image');
+            if (err) {
+              res.send(500, { error: err.toString() });
+              next(err);
+            } else {
+              res.send(200, { message: "OK" });
+              next();
+            } 
+          });
         });
       });
-    });
+    } catch(err){
+      console.err(err.toString());
+    }
   });
 
   app.get('*', function(req, res, next) {
@@ -125,7 +129,7 @@ module.exports = function(app, serverConfig) {
       } else {
         // synchronous
         callRasterizer(server, rasterizerOptions, function(error) {
-          if (error){ console.log('Callback processImageUsingRasterizer'); return callback(error); }
+          if (error){ return callback(error); }
           if (serverConfig.sendImage){ 
             sendImageInResponse(filePath, res, callback);
           } else { 
