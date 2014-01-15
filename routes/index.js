@@ -104,25 +104,26 @@ module.exports = function(app, serverConfig) {
   }
 
   var processImageUsingRasterizer = function(server, rasterizerOptions, filePath, res, url, callback) {
-    redisService.addWork(server.serverId);
-    if (url) {
-      // asynchronous
-      res.send('Will post screenshot to ' + url + ' when processed');
-      callRasterizer(server, rasterizerOptions, function(error) {
-        if (error){ return callback(error); }
-        postImageToUrl(filePath, url, callback);
-      });
-    } else {
-      // synchronous
-      callRasterizer(server, rasterizerOptions, function(error) {
-        if (error){ return callback(error); }
-        if (serverConfig.sendImage){ 
-          sendImageInResponse(filePath, res, callback);
-        } else { 
-          callback(); 
-        }
-      });
-    }
+    redisService.addWork(server.serverId, function(){
+      if (url) {
+        // asynchronous
+        res.send('Will post screenshot to ' + url + ' when processed');
+        callRasterizer(server, rasterizerOptions, function(error) {
+          if (error){ return callback(error); }
+          postImageToUrl(filePath, url, callback);
+        });
+      } else {
+        // synchronous
+        callRasterizer(server, rasterizerOptions, function(error) {
+          if (error){ return callback(error); }
+          if (serverConfig.sendImage){ 
+            sendImageInResponse(filePath, res, callback);
+          } else { 
+            callback(); 
+          }
+        });
+      }
+    });
   }
 
   var callRasterizer = function(server, rasterizerOptions, callback) {
@@ -130,15 +131,16 @@ module.exports = function(app, serverConfig) {
     request.get(rasterizerOptions, function(error, response, body) {
       //console.info("response.statusCode: %s", response.statusCode);
       //console.info("response.body: %s", response.body.trim());
-      redisService.removeWork(server.serverId);
-      if (error || response.statusCode != 200) {
-        console.error('Error while requesting the rasterizer: {%s}', response.body.trim());
-        //var nameRasterizerService = "rasterizerService_" + server.serverId;
-        //var rasterizerService = app.settings.nameRasterizerService;
-        //server.restartService();
-        return callback(new Error(response.body.trim()));
-      }
-      callback(null);
+      redisService.removeWork(server.serverId, function(){
+        if (error || response.statusCode != 200) {
+          console.error('Error while requesting the rasterizer: {%s}', response.body.trim());
+          //var nameRasterizerService = "rasterizerService_" + server.serverId;
+          //var rasterizerService = app.settings.nameRasterizerService;
+          //server.restartService();
+          return callback(new Error(response.body.trim()));
+        }
+        callback(null);
+      });
     });
   }
 

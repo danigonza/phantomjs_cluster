@@ -8,6 +8,22 @@ var console = clim();
 var RasterizerService = require('./lib/rasterizerService');
 var RedisService = require('./lib/redisService');
 
+// Clim personalization
+clim.logWrite = function(level, prefixes, msg) {
+  // Default implementation writing to stderr
+  var line = clim.getTime() + " " + level;
+  if (prefixes.length > 0) { line += " " + prefixes.join(" "); }
+  line += " " + msg;
+  //if (msg.indexOf('[DEB]') != -1){
+		process.stderr.write(line + "\n");	
+	//}
+  // or post it web service, save to database etc...
+};
+
+clim.getTime = function(){
+  return new Date().toDateString();
+};
+
 process.on('uncaughtException', function (err) {
   console.error("[uncaughtException]", err);
   process.exit(1);

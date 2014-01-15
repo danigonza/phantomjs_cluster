@@ -18,6 +18,5 @@
     "request": "2.9.153",
     "jscs": "*",
     "clim": "*",
-    "node-logentries": "0.0.2"
   }
 }
