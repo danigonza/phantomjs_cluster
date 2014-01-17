@@ -3,27 +3,12 @@
  */
 var config = require('config');
 var express = require('express');
-var clim = require("clim");
-var console = clim();
+var ClimService = require("./lib/climService");
 var RasterizerService = require('./lib/rasterizerService');
-var RedisService = require('./lib/redisService');
 
-// Clim personalization
-clim.logWrite = function(level, prefixes, msg) {
-  // Default implementation writing to stderr
-  var line = clim.getTime() + " " + level;
-  if (prefixes.length > 0) { line += " " + prefixes.join(" "); }
-  line += " " + msg;
-  //if (msg.indexOf('[DEB]') != -1){
-		process.stderr.write(line + "\n");	
-	//}
-  // or post it web service, save to database etc...
-};
+var clim = new ClimService();
 
-clim.getTime = function(){
-  return new Date().toDateString();
-};
-
+// Application exceptions
 process.on('uncaughtException', function (err) {
   console.error("[uncaughtException]", err);
   process.exit(1);
@@ -39,18 +24,17 @@ process.on('SIGINT', function () {
 
 // web service
 var app = express();
-var redisService = new RedisService(config.redis).startService(function(data){
-	app.configure(function(){
-	  app.use(app.router);
-	  app.set('redisService', redisService);
-	  for (var i = 0; i < config.rasterizer.num; i++){
-	  	app.set('rasterizerService_' + (config.rasterizer.port + i), new RasterizerService(config.rasterizer, config.rasterizer.port + i, redisService).startService());
-	  }
-	});
-	app.configure('development', function() {
-	  app.use(express.errorHandler({ dumpExceptions: true, showStack: true }));
-	});
-	require('./routes')(app, config.server);
-	app.listen(config.server.port);
-	console.log('Express server listening on port ' + config.server.port);
+
+app.configure(function(){
+	app.use(app.router);
+	app.set('climService', clim);
+	app.set('rasterizerService', new RasterizerService(config.rasterizer, config.rasterizer.port, clim).startService());
 });
+
+app.configure('development', function() {
+  app.use(express.errorHandler({ dumpExceptions: true, showStack: true }));
+});
+
+require('./routes')(app, config.server);
+app.listen(config.server.port);
+clim.console.log('Express server listening on port ' + config.server.port);
