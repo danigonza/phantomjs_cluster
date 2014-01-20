@@ -10,14 +10,13 @@ var clim = new ClimService();
 // Application exceptions
 process.on('uncaughtException', function (err) {
   clim.console.error("[Exception]", err);
-  clim.console.error(err.stack);
+  //clim.console.error(err.stack);
   process.exit(1);
 });
 
 // Listen for dying workers
 cluster.on('exit', function (worker, code, signal) {
   // Replace the dead worker, we're not sentimental
-  clim.console("Finishing worker %s". worker + " with code " + code + " and signal " + signal);
   clim.console.log('Worker ' + worker.id + ' died :(');
   cluster.fork();
 });
@@ -42,6 +41,10 @@ if (cluster.isMaster) {
 
 	app.configure(function(){
 		app.use(app.router);
+		app.use(function(err, req, res, next) {
+  		// only handle `next(err)` calls
+  		res.send(500, { error: err.toString() });
+		});
 		app.set('climService', clim);
 		app.set('rasterizerService', new RasterizerService(config.rasterizer, process.env['PHANTOMJS_PORT'], clim).startService());
 	});

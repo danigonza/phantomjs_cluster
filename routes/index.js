@@ -39,7 +39,6 @@ module.exports = function(app, serverConfig) {
         finishingProcessingImage(err, res, next); 
       });
     });
-
   });
 
   app.get('*', function(req, res, next) {
@@ -111,7 +110,7 @@ module.exports = function(app, serverConfig) {
   var callRasterizer = function(rasterizerOptions, callback) {
     request.get(rasterizerOptions, function(error, response, body) {
       if (error || response.statusCode != 200) {
-        climService.console.error('Error while requesting the rasterizer: {%s}', response.body.trim());
+        climService.console.error('Error while requesting the rasterizer: { %s }', response.body.trim());
         return callback(new Error(response.body.trim()));
       }
       callback(null);
@@ -145,7 +144,6 @@ module.exports = function(app, serverConfig) {
   var finishingProcessingImage = function(err, res, next){
     climService.console.log('Finished processing image');
     if (err) {
-      res.send(500, { error: err.toString() });
       next(err);
     } else {
       res.send(200, { message: "OK" });
