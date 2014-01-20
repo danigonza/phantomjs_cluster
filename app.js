@@ -15,8 +15,9 @@ process.on('uncaughtException', function (err) {
 });
 
 // Listen for dying workers
-cluster.on('exit', function (worker) {
-	// Replace the dead worker, we're not sentimental
+cluster.on('exit', function (worker, code, signal) {
+  // Replace the dead worker, we're not sentimental
+  clim.console("Finishing worker %s". worker + " with code " + code + " and signal " + signal);
   clim.console.log('Worker ' + worker.id + ' died :(');
   cluster.fork();
 });
@@ -24,7 +25,6 @@ cluster.on('exit', function (worker) {
 if (cluster.isMaster) {
   // Count the machine's CPUs
   var cpuCount = require('os').cpus().length;
-  var cpuCount = 1;
 
   // Create a worker for each CPU
   for (var i = 0; i < cpuCount; i += 1) {
@@ -54,5 +54,3 @@ if (cluster.isMaster) {
 	app.listen(config.server.port);
 	clim.console.log('Worker ' + cluster.worker.id + ' running!');
 }
-
-//clim.console.log('Express server listening on port ' + config.server.port);
