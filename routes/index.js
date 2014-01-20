@@ -25,7 +25,7 @@ module.exports = function(app, serverConfig) {
 
     // Checking if file exist in disc 
     if (!serverConfig.loadTest && fs.existsSync(filePath)) {
-      console.log('Request for %s - Found in cache', url);
+      climService.console.log('Request for %s - Found in cache', url);
       processImageUsingCache(filePath, res, callbackUrl, function(err){ 
         finishingProcessingImage(err, res, next); 
       });
@@ -34,7 +34,7 @@ module.exports = function(app, serverConfig) {
 
     var params = { 'url': url, 'filePath': filePath, 'renderType': renderType };
     createHeaders(req, params, rasterizerService.getPort(), serverConfig, function(options){
-      console.log('Request for %s - Rasterizing it', url);
+      climService.console.log('Request for %s - Rasterizing it', url);
       processImageUsingRasterizer(options, filePath, res, callbackUrl, function(err){ 
         finishingProcessingImage(err, res, next); 
       });
@@ -111,7 +111,7 @@ module.exports = function(app, serverConfig) {
   var callRasterizer = function(rasterizerOptions, callback) {
     request.get(rasterizerOptions, function(error, response, body) {
       if (error || response.statusCode != 200) {
-        console.error('Error while requesting the rasterizer: {%s}', response.body.trim());
+        climService.console.error('Error while requesting the rasterizer: {%s}', response.body.trim());
         return callback(new Error(response.body.trim()));
       }
       callback(null);
@@ -119,20 +119,20 @@ module.exports = function(app, serverConfig) {
   }
 
   var postImageToUrl = function(imagePath, url, callback) {
-    console.log('Streaming image to %s', url);
+    climService.console.log('Streaming image to %s', url);
     var fileStream = fs.createReadStream(imagePath);
     fileStream.on('error', function(err){
-      console.error('Error while reading file: %s', err.message);
+      climService.console.error('Error while reading file: %s', err.message);
       callback(err);
     });
     fileStream.pipe(request.post(url, function(err) {
-      if (err){ console.error('Error while streaming screenshot: %s', err); }
+      if (err){ climService.console.error('Error while streaming screenshot: %s', err); }
       callback(err);
     }));
   }
 
   var sendImageInResponse = function(imagePath, res, callback) {
-    console.log('Sending image in response');
+    climService.console.log('Sending image in response');
     if (serverConfig.useCors) {
       res.setHeader("Access-Control-Allow-Origin", "*");
       res.setHeader("Access-Control-Expose-Headers", "Content-Type");
@@ -143,7 +143,7 @@ module.exports = function(app, serverConfig) {
   }
 
   var finishingProcessingImage = function(err, res, next){
-    console.log('Finished processing image');
+    climService.console.log('Finished processing image');
     if (err) {
       res.send(500, { error: err.toString() });
       next(err);

@@ -10,7 +10,7 @@ var clim = new ClimService();
 // Application exceptions
 process.on('uncaughtException', function (err) {
   clim.console.error("[Exception]", err);
-  //clim.console.error(err.stack);
+  clim.console.error(err.stack);
   process.exit(1);
 });
 
@@ -24,6 +24,7 @@ cluster.on('exit', function (worker) {
 if (cluster.isMaster) {
   // Count the machine's CPUs
   var cpuCount = require('os').cpus().length;
+  var cpuCount = 1;
 
   // Create a worker for each CPU
   for (var i = 0; i < cpuCount; i += 1) {
