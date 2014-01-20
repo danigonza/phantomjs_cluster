@@ -1,16 +1,29 @@
 /**
  * Module dependencies.
  */
-var ClimService = require("./lib/climService");
-var cluster = require("cluster")
-var config = require('config');
+var ClimService = require("./lib/climService"),
+		worker = require('./lib/worker.js')
+ 		cluster = require("cluster"),
+		config = require('config'),
+		Queue = require('bull');
 
 var clim = new ClimService();
+var workQueue = Queue("work phantomjs server", 6379, '127.0.0.1');
+var resultQueue = Queue("result phantomjs server", 6379, '127.0.0.1');
+
+workQueue.on('completed', function(job){
+	clim.console.info("Task completed for job id: " + job.jobId);
+  resultQueue.add({code: 200, msg: "Task completed for job id: " + job.jobId});
+})
+.on('failed', function(job, err){
+	clim.console.error("Error for job id: " + job.jobId + " : " + err.toString());
+  resultQueue.add({code: 500, msg: "Error for job id: " + job.jobId + " : " + err.toString()});
+});
 
 // Application exceptions
 process.on('uncaughtException', function (err) {
   clim.console.error("[Exception]", err);
-  //clim.console.error(err.stack);
+  clim.console.error(err.stack);
   process.exit(1);
 });
 
@@ -18,7 +31,7 @@ process.on('uncaughtException', function (err) {
 cluster.on('exit', function (worker, code, signal) {
   // Replace the dead worker, we're not sentimental
   clim.console.log('Worker ' + worker.id + ' died :(');
-  cluster.fork();
+  //cluster.fork();
 });
 
 if (cluster.isMaster) {
@@ -36,14 +49,12 @@ if (cluster.isMaster) {
 	var express = require('express');
 	var RasterizerService = require('./lib/rasterizerService');
 
-	// web service
+	// web server
 	var app = express();
 
 	app.configure(function(){
-		app.use(app.router);
 		app.use(function(err, req, res, next) {
-  		// only handle `next(err)` calls
-  		res.send(500, { error: err.toString() });
+			resultQueue.add({code: 500, msg: "Error for job id: " + err.toString()});
 		});
 		app.set('climService', clim);
 		app.set('rasterizerService', new RasterizerService(config.rasterizer, process.env['PHANTOMJS_PORT'], clim).startService());
@@ -53,7 +64,13 @@ if (cluster.isMaster) {
   	app.use(express.errorHandler({ dumpExceptions: true, showStack: true }));
 	});
 
-	require('./routes')(app, config.server);
-	app.listen(config.server.port);
 	clim.console.log('Worker ' + cluster.worker.id + ' running!');
+
+	workQueue.process(function(job, jobDone){
+		worker.processing(app, config.server, job.data, function(err){
+			if (err) { jobDone(err); }
+			clim.console.log("Job done by worker", cluster.worker.id, "jobId",job.jobId);
+	    jobDone();
+		});
+  });
 }
