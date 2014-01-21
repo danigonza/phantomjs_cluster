@@ -18,7 +18,7 @@
     "request": "2.9.153",
     "jscs": "*",
     "clim": "*",
-    "redis-locking-worker": "*",
-    "bull": "*"
+    "bull": "*",
+    "sidekiq": "*"
   }
 }

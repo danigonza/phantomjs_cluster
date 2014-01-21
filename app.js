@@ -2,22 +2,34 @@
  * Module dependencies.
  */
 var ClimService = require("./lib/climService"),
-		worker = require('./lib/worker.js')
- 		cluster = require("cluster"),
-		config = require('config'),
-		Queue = require('bull');
+		worker 			= require('./lib/worker.js')
+ 		cluster	 		= require("cluster"),
+		config 			= require('config'),
+		Queue 			= require('bull');
 
+// Initilize console
 var clim = new ClimService();
-var workQueue = Queue("work phantomjs server", 6379, '127.0.0.1');
-var resultQueue = Queue("result phantomjs server", 6379, '127.0.0.1');
 
+// Jobs queue
+var workQueue 	= Queue("jobs_phantomjs", 6379, '127.0.0.1');
+var resultQueue = Queue("errors_phantomjs", 6379, '127.0.0.1');
+
+// Costumizing job queue events
 workQueue.on('completed', function(job){
-	clim.console.info("Task completed for job id: " + job.jobId);
-  resultQueue.add({code: 200, msg: "Task completed for job id: " + job.jobId});
+	//clim.console.log("Job #%s completed!", job.jobId);
 })
 .on('failed', function(job, err){
-	clim.console.error("Error for job id: " + job.jobId + " : " + err.toString());
-  resultQueue.add({code: 500, msg: "Error for job id: " + job.jobId + " : " + err.toString()});
+	clim.console.error("Job #%s failed! => " + err.toString(), job.jobId);
+	resultQueue.add({jobId: job.jobId, msg: err.toString()});
+})
+.on('progress', function(job, progress){
+  clim.console.info('\r  job #' + job.jobId + ' ' + progress + '% complete');
+})
+.on('paused', function(){
+  clim.console.warn("Work queue paused");
+})
+.on('resumed', function(job){
+	clim.console.warn("Work queue resumed");
 });
 
 // Application exceptions
@@ -35,13 +47,14 @@ cluster.on('exit', function (worker, code, signal) {
 });
 
 if (cluster.isMaster) {
+
   // Count the machine's CPUs
   var cpuCount = require('os').cpus().length;
 
   // Create a worker for each CPU
   for (var i = 0; i < cpuCount; i += 1) {
   	var new_worker_env = {};
-  	new_worker_env["PHANTOMJS_PORT"] =  config.rasterizer.port + i;
+  	new_worker_env["PHANTOMJS_PORT"] = config.rasterizer.port + i;
     cluster.fork(new_worker_env);
   }
 } else {
@@ -49,26 +62,23 @@ if (cluster.isMaster) {
 	var express = require('express');
 	var RasterizerService = require('./lib/rasterizerService');
 
-	// web server
+	// App instance
 	var app = express();
 
-	app.configure(function(){
-		app.use(function(err, req, res, next) {
-			resultQueue.add({code: 500, msg: "Error for job id: " + err.toString()});
-		});
+	app.configure(function(){;
 		app.set('climService', clim);
-		app.set('rasterizerService', new RasterizerService(config.rasterizer, process.env['PHANTOMJS_PORT'], clim).startService());
+		app.set('rasterizerService', new RasterizerService(config.rasterizer, process.env['PHANTOMJS_PORT'], clim).startService(function(port){
+			clim.console.log("Worker %s and PhantomJS server http://localhost:" + port + " running!", cluster.worker.id);
+		}));
 	});
 
 	app.configure('development', function() {
   	app.use(express.errorHandler({ dumpExceptions: true, showStack: true }));
 	});
 
-	clim.console.log('Worker ' + cluster.worker.id + ' running!');
-
 	workQueue.process(function(job, jobDone){
 		worker.processing(app, config.server, job.data, function(err){
-			if (err) { jobDone(err); }
+			if (err instanceof Error) { jobDone(err); }
 			clim.console.log("Job done by worker", cluster.worker.id, "jobId",job.jobId);
 	    jobDone();
 		});

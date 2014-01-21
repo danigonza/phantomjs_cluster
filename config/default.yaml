@@ -4,12 +4,10 @@ rasterizer:
   viewport: '612x612' # browser window size. Height frows according to the content
 #  num: 5
   debug: false
-cache:
-  lifetime: 60000      # one minute, set to 0 for no cache
 server:
   port: 3200           # main service port
-  useCors: false       # enable CORS support
-  sendImage: false
+  #useCors: false       # enable CORS support
+  #sendImage: false
   loadTest: true
 #redis:
 #  port: 6379
