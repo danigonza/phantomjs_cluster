@@ -5,7 +5,9 @@ var ClimService = require("./lib/climService"),
 		worker 			= require('./lib/worker.js')
  		cluster	 		= require("cluster"),
 		config 			= require('config'),
-		Queue 			= require('bull');
+		Queue 			= require('bull'),
+		redis 		= require("redis"),
+		Sidekiq 		= require("sidekiq");
 
 // Initilize console
 var clim = new ClimService();
@@ -13,24 +15,6 @@ var clim = new ClimService();
 // Jobs queue
 var workQueue 	= Queue("jobs_phantomjs", 6379, '127.0.0.1');
 var resultQueue = Queue("errors_phantomjs", 6379, '127.0.0.1');
-
-// Costumizing job queue events
-workQueue.on('completed', function(job){
-	//clim.console.log("Job #%s completed!", job.jobId);
-})
-.on('failed', function(job, err){
-	clim.console.error("Job #%s failed! => " + err.toString(), job.jobId);
-	resultQueue.add({jobId: job.jobId, msg: err.toString()});
-})
-.on('progress', function(job, progress){
-  clim.console.info('\r  job #' + job.jobId + ' ' + progress + '% complete');
-})
-.on('paused', function(){
-  clim.console.warn("Work queue paused");
-})
-.on('resumed', function(job){
-	clim.console.warn("Work queue resumed");
-});
 
 // Application exceptions
 process.on('uncaughtException', function (err) {
@@ -62,6 +46,30 @@ if (cluster.isMaster) {
 	var express = require('express');
 	var RasterizerService = require('./lib/rasterizerService');
 
+	// Redis
+	var redis_client = redis.createClient(); 
+
+	// Sidekiq
+	var sidekiq = new Sidekiq(redis_client, process.env.NODE_ENV);
+
+	// Costumizing job queue events
+	workQueue.on('completed', function(job){
+		//clim.console.log("Job #%s completed!", job.jobId);
+	})
+	.on('failed', function(job, err){
+		clim.console.error("Job #%s failed! => " + err.toString(), job.jobId);
+		resultQueue.add({jobId: job.jobId, msg: err.toString()});
+	})
+	.on('progress', function(job, progress){
+		clim.console.info('\r  job #' + job.jobId + ' ' + progress + '% complete');
+	})
+	.on('paused', function(){
+		clim.console.warn("Work queue paused");
+	})
+	.on('resumed', function(job){
+		clim.console.warn("Work queue resumed");
+	});
+
 	// App instance
 	var app = express();
 
@@ -80,6 +88,10 @@ if (cluster.isMaster) {
 		worker.processing(app, config.server, job.data, function(err){
 			if (err instanceof Error) { jobDone(err); }
 			clim.console.log("Job done by worker", cluster.worker.id, "jobId",job.jobId);
+			sidekiq.enqueue("Picture", ["full", 445491, null], {
+    		retry: 5,
+    		queue: "default"
+			}); 
 	    jobDone();
 		});
   });
