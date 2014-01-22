@@ -13,12 +13,12 @@
   },
   "dependencies": {
     "express": "3.x",
-    "redis": "*",
     "config": "0.4.15",
     "request": "2.9.153",
     "jscs": "*",
     "clim": "*",
     "bull": "*",
-    "sidekiq": "*"
+    "sidekiq": "~1.0.2",
+    "connect-redis": "*"
   }
 }
