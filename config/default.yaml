@@ -8,8 +8,8 @@ server:
   port: 3200           # main service port
   #useCors: false       # enable CORS support
   #sendImage: false
-  loadTest: true
-#redis:
-#  port: 6379
-#  host: 127.0.0.1
+  loadTest: false
+redis:
+  port: 6379
+  host: 127.0.0.1
 #  debug: false

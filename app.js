@@ -13,8 +13,8 @@ var ClimService = require("./lib/climService"),
 var clim = new ClimService();
 
 // Jobs queue
-var workQueue 	= Queue("jobs_phantomjs", 6379, '127.0.0.1');
-var resultQueue = Queue("errors_phantomjs", 6379, '127.0.0.1');
+var workQueue 	= Queue("jobs_phantomjs", config.redis.port, config.redis.host);
+var resultQueue = Queue("errors_phantomjs", config.redis.port, config.redis.host);
 
 // Application exceptions
 process.on('uncaughtException', function (err) {
@@ -47,10 +47,11 @@ if (cluster.isMaster) {
 	var RasterizerService = require('./lib/rasterizerService');
 
 	// Redis
-	var redis_client = redis.createClient(); 
+	var redis_client = redis.createClient(config.redis.port, config.redis.host); 
+	redis_client.select(12);
 
 	// Sidekiq
-	var sidekiq = new Sidekiq(redis_client, process.env.NODE_ENV);
+	var sidekiq = new Sidekiq(redis_client, 'bgjobs');
 
 	// Costumizing job queue events
 	workQueue.on('completed', function(job){
@@ -86,12 +87,31 @@ if (cluster.isMaster) {
 
 	workQueue.process(function(job, jobDone){
 		worker.processing(app, config.server, job.data, function(err){
-			if (err instanceof Error) { jobDone(err); }
+			var state;
+			var filePath;
+			if (err instanceof Error) { 
+				jobDone(err);
+				state = job.data.error_state	 
+				filePath = null;
+			} else {
+				state = job.data.success_state
+				filePath = err;
+			}
+			try {
+				clim.console.info("Class Name: %s", job.data.class_name);
+				clim.console.info("State: %s", state);
+				clim.console.info("Note Id: %s", job.data.note_id);
+				//clim.console.info("Share: %s", share);
+				
+				sidekiq.enqueue(job.data.class_name, [state, job.data.note_id, job.data.share, filePath],{
+					retry: 5,
+					queue: 'default'
+				});
+			}
+			catch (err){
+				clim.console.error(err.toString())
+			}
 			clim.console.log("Job done by worker", cluster.worker.id, "jobId",job.jobId);
-			sidekiq.enqueue("Picture", ["full", 445491, null], {
-    		retry: 5,
-    		queue: "default"
-			}); 
 	    jobDone();
 		});
   });
