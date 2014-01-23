@@ -19,6 +19,8 @@
     "clim": "*",
     "bull": "*",
     "sidekiq": "~1.0.2",
-    "connect-redis": "*"
+    "connect-redis": "*",
+    "mocha": "*",
+    "should": "*"
   }
 }
