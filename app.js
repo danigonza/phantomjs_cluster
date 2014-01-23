@@ -98,11 +98,6 @@ if (cluster.isMaster) {
 				filePath = err;
 			}
 			try {
-				clim.console.info("Class Name: %s", job.data.class_name);
-				clim.console.info("State: %s", state);
-				clim.console.info("Note Id: %s", job.data.note_id);
-				//clim.console.info("Share: %s", share);
-				
 				sidekiq.enqueue(job.data.class_name, [state, job.data.note_id, job.data.share, filePath],{
 					retry: 5,
 					queue: 'default'
