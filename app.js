@@ -1,6 +1,8 @@
 /**
  * Module dependencies.
  */
+module.exports = process.env.APP_COVERAGE ? require('./lib-cov/app') : require('./lib/app');
+ 
 var ClimService = require("./lib/climService"),
 		worker 			= require('./lib/worker.js')
  		cluster	 		= require("cluster"),

@@ -5,7 +5,8 @@
   "description": "A simple screenshot web service powered by Express and PhantomJS",
   "private": true,
   "scripts": {
-    "start": "node app.js"
+    "start": "node app.js",
+    "test": "make test"
   },
   "repository": {
     "type": "git",
@@ -21,6 +22,7 @@
     "sidekiq": "~1.0.2",
     "connect-redis": "*",
     "mocha": "*",
-    "should": "*"
+    "should": "*",
+    "chai": "~1.4.2"
   }
 }
