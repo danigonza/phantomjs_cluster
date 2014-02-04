@@ -2,7 +2,6 @@ rasterizer:
   command: phantomjs   # phantomjs executable
   port: 3100           # internal service port. No need to allow inbound or outbound access to this port
   viewport: '612x612' # browser window size. Height frows according to the content
-#  num: 5
   debug: false
 server:
   port: 3200           # main service port

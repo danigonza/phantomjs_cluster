@@ -2,15 +2,19 @@
  * Module dependencies.
  */
 var ClimService = require("./lib/climService"),
-		worker 			= require('./lib/worker.js')
- 		cluster	 		= require("cluster"),
-		config 			= require('config'),
-		Queue 			= require('bull'),
-		redis 		= require("redis"),
-		Sidekiq 		= require("sidekiq");
+	worker 		= require('./lib/worker.js'),
+	cluster	 	= require("cluster"),
+	config 		= require('config'),
+	Queue 		= require('bull'),
+	redis 		= require("redis"),
+	Sidekiq 	= require("sidekiq");
 
 // Initilize console
-var clim = new ClimService();
+var clim = new ClimService(":" + config.server.port);
+clim.console.warn("Warning example", "a");
+clim.console.error("Error example");
+clim.console.info("Info example");
+clim.console.log("log exmaple");
 
 // Jobs queue
 var workQueue 	= Queue("jobs_phantomjs", config.redis.port, config.redis.host);
@@ -27,7 +31,7 @@ process.on('uncaughtException', function (err) {
 cluster.on('exit', function (worker, code, signal) {
   // Replace the dead worker, we're not sentimental
   clim.console.log('Worker ' + worker.id + ' died :(');
-  //cluster.fork();
+  cluster.fork();
 });
 
 if (cluster.isMaster) {
@@ -45,6 +49,8 @@ if (cluster.isMaster) {
 	// Include other modules
 	var express = require('express');
 	var RasterizerService = require('./lib/rasterizerService');
+
+	//var clim = clim(":" + process.env['PHANTOMJS_PORT']);
 
 	// Redis
 	var redis_client = redis.createClient(config.redis.port, config.redis.host); 
