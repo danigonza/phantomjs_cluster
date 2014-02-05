@@ -10,11 +10,7 @@ var ClimService = require("./lib/climService"),
 	Sidekiq 	= require("sidekiq");
 
 // Initilize console
-var clim = new ClimService(":" + config.server.port);
-clim.console.warn("Warning example", "a");
-clim.console.error("Error example");
-clim.console.info("Info example");
-clim.console.log("log exmaple");
+var clim = new ClimService(config.server.port);
 
 // Jobs queue
 var workQueue 	= Queue("jobs_phantomjs", config.redis.port, config.redis.host);
@@ -50,7 +46,7 @@ if (cluster.isMaster) {
 	var express = require('express');
 	var RasterizerService = require('./lib/rasterizerService');
 
-	//var clim = clim(":" + process.env['PHANTOMJS_PORT']);
+	clim.addPrefix("[PhantomJS:" + process.env['PHANTOMJS_PORT'] + "]");
 
 	// Redis
 	var redis_client = redis.createClient(config.redis.port, config.redis.host); 
@@ -88,7 +84,7 @@ if (cluster.isMaster) {
 	});
 
 	app.configure('development', function() {
-  	app.use(express.errorHandler({ dumpExceptions: true, showStack: true }));
+  		app.use(express.errorHandler({ dumpExceptions: true, showStack: true }));
 	});
 
 	workQueue.process(function(job, jobDone){
@@ -113,7 +109,7 @@ if (cluster.isMaster) {
 				clim.console.error(err.toString())
 			}
 			clim.console.log("Job done by worker", cluster.worker.id, "jobId",job.jobId);
-	    jobDone();
+	    	jobDone();
 		});
   });
 }
